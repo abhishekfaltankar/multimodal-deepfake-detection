@@ -24,3 +24,4 @@ Thumbs.db
 
 # Environment secrets (if any added later)
 .env
+venv311/

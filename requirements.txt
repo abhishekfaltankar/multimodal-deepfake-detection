@@ -28,3 +28,4 @@ tqdm
 pyyaml
 gdown
 requests
+ultralytics
