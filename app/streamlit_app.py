@@ -2,7 +2,6 @@ import streamlit as st
 from pathlib import Path
 import tempfile
 import sys
-import cv2
 import torch
 import torch.nn.functional as F
 from torchvision import transforms
@@ -94,6 +93,7 @@ def load_models():
 
 
 def analyze_video(video_path, model, face_model):
+    import cv2
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
         return None, None
