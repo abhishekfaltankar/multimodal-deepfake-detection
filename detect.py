@@ -40,22 +40,21 @@ _audio_pipe, _vad = None, None
 def load_models():
     global _audio_model, _audio_processor
     if '_audio_model' not in globals() or _audio_model is None:
-        from transformers import AutoConfig, AutoModelForAudioClassification, AutoProcessor
+        from transformers import AutoConfig, AutoProcessor
+        # 1. Import the dynamic loading factory tools
+        from transformers.models.auto.auto_factory import _get_model_class
         import torch
         
         print(f"Loading voice model: {AUDIO_MODEL} ...")
         
-        # 1. Fetch the custom architecture layout blueprint securely first
+        # 2. Extract the model's structural configuration map blueprint
         config = AutoConfig.from_pretrained(AUDIO_MODEL, trust_remote_code=True)
         
-        # 2. Directly initialize the classification model class using the configuration map
-        _audio_model = AutoModelForAudioClassification.from_pretrained(
-            AUDIO_MODEL, 
-            config=config, 
-            trust_remote_code=True
-        )
+        # 3. FORCE Hugging Face to load the custom class directly, bypassing the standard model check list
+        model_class = _get_model_class(config, AutoModelForAudioClassification._model_mapping)
+        _audio_model = model_class.from_pretrained(AUDIO_MODEL, config=config, trust_remote_code=True)
         
-        # 3. Pull the corresponding feature tracking audio processor array data
+        # 4. Standard audio tracker processor initialization
         _audio_processor = AutoProcessor.from_pretrained(AUDIO_MODEL, trust_remote_code=True)
         
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -64,7 +63,6 @@ def load_models():
         
     if ENABLE_FACE:
         visual.load_model()
-
 
 # ------------------------------------------------------------------ voice part
 def to_wav(path):
@@ -174,18 +172,18 @@ def analyze_audio(path):
     probs = []
     device = next(_audio_model.parameters()).device
     
-    # Evaluate each individual window slice natively using raw math vectors
+    # Process each isolated sliding frame step slice using the custom loaded class
     for w in windows:
         inputs = _audio_processor(w, sampling_rate=SR, return_tensors="pt")
         inputs = {k: v.to(device) for k, v in inputs.items()}
         
         with torch.no_grad():
             outputs = _audio_model(**inputs)
-            logits = outputs.logits
-            # Run Softmax to translate raw metrics to standard probability percentages
+            # The Speech-Arena custom class returns an object where indices or logits hold the weights matrix
+            logits = getattr(outputs, "logits", outputs[0])
             probabilities = torch.nn.functional.softmax(logits, dim=-1).cpu().numpy()
             
-        # Index 0 targets the synthetic 'spoof' (FAKE) calculation class for the model
+        # Extract the primary fake probability array element index
         spoof_score = float(probabilities[0][0])
         probs.append(spoof_score)
         
