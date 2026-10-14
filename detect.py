@@ -40,31 +40,37 @@ _audio_pipe, _vad = None, None
 def load_models():
     global _audio_model, _audio_processor
     if '_audio_model' not in globals() or _audio_model is None:
-        # Added AutoModelForAudioClassification straight into the initialization imports
-        from transformers import AutoConfig, AutoProcessor, AutoModelForAudioClassification
+        from transformers import AutoConfig, AutoProcessor
         import torch
         import sys
         
         print(f"Loading voice model: {AUDIO_MODEL} ...")
         
-        # 1. Fetch configuration settings map with security clearance bypass tags
+        # 1. Load the model configuration with remote security clearance
         config = AutoConfig.from_pretrained(AUDIO_MODEL, trust_remote_code=True)
         
-        # 2. Extract class path directly from the downloaded dynamic modules folder to bypass the dictionary check
+        # 2. Extract the exact module registration names natively
         module_name = config.__class__.__module__
-        class_name = config.__class__.__name__.replace("Config", "Model")
         
-        # Inject the custom downloaded class files straight into the runtime memory stack
+        # Force the server to import the dynamic script file into the memory stack
         __import__(module_name)
         module = sys.modules[module_name]
-        model_class = getattr(module, class_name, None)
         
+        # 3. DIRECT MATCH WORKAROUND: Find the actual classification model class inside the script file
+        model_class = None
+        for attr_name in dir(module):
+            # Check for classification or prediction architecture model indicators
+            if any(k in attr_name for k in ["Classification", "Prediction", "Model"]) and not attr_name.endswith("Config"):
+                model_class = getattr(module, attr_name)
+                break
+                
+        # 4. Emergency fallback if no custom names match standard conventions
         if model_class is None:
-            # Fallback directly to factory generation tools if custom class tracking shifts
+            from transformers import AutoModelForAudioClassification
             from transformers.models.auto.auto_factory import _get_model_class
             model_class = _get_model_class(config, AutoModelForAudioClassification._model_mapping)
             
-        # 3. Pull the weights and processor data elements
+        # 5. Initialize the weights and tracking processor structures natively
         _audio_model = model_class.from_pretrained(AUDIO_MODEL, config=config, trust_remote_code=True)
         _audio_processor = AutoProcessor.from_pretrained(AUDIO_MODEL, trust_remote_code=True)
         
