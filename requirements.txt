@@ -1,0 +1,14 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+torchaudio
+transformers>=4.56,<5
+einops
+imageio-ffmpeg
+numpy
+pillow
+opencv-python-headless
+streamlit
+timm
+# Optional, better speech detection (heavier install): silero-vad
+# For evaluate.py only (run locally): scikit-learn matplotlib
