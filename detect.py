@@ -41,41 +41,33 @@ def load_models():
     global _audio_model, _audio_processor
     if '_audio_model' not in globals() or _audio_model is None:
         from transformers import AutoConfig, AutoProcessor
+        from huggingface_hub import hf_hub_download
         import torch
         import sys
         import os
         
         print(f"Loading voice model: {AUDIO_MODEL} ...")
         
-        # 1. Initialize standard configuration parameters with remote access clearance
+        # 1. Download the config and the configuration files explicitly from the repository
         config = AutoConfig.from_pretrained(AUDIO_MODEL, trust_remote_code=True)
         
-        # 2. Force download the remote codebase layout directly into the server modules cache
-        module_name = config._class.module_
-        _import_(module_name)
-        module = sys.modules[module_name]
-        
-        # 3. DIRECT MANIFEST MATCHING WORKAROUND: Find the exact custom deep learning network class
-        model_class = None
-        for attribute in dir(module):
-            # Target the custom underlying model module directly by its core name parameters
-            if "DF_Arena" in attribute and not attribute.endswith("Config"):
-                model_class = getattr(module, attribute)
-                break
-                
-        # Final absolute production manual string mapping target if structural loops hide it
-        if model_class is None:
-            if hasattr(module, "DF_Arena_500M_Model"):
-                model_class = getattr(module, "DF_Arena_500M_Model")
-            elif hasattr(module, "DF_Arena_500M"):
-                model_class = getattr(module, "DF_Arena_500M")
-            else:
-                # Direct fallback to standard model layout factory routines
-                from transformers import AutoModelForAudioClassification
-                from transformers.models.auto.auto_factory import _get_model_class
-                model_class = _get_model_class(config, AutoModelForAudioClassification._model_mapping)
-        
-        # 4. Pull down weights arrays and initialize audio processor layers smoothly
+        # 2. Force download the custom model script and inject its folder path into Python's system paths
+        try:
+            # This downloads the custom model definition script directly from the hub
+            script_path = hf_hub_download(repo_id=AUDIO_MODEL, filename="conformer.py")
+            sys.path.append(os.path.dirname(script_path))
+            
+            # Now we import the model class directly from the file without using reflection loop tricks
+            import conformer
+            model_class = getattr(conformer, "DF_Arena_500M_Model")
+        except Exception as e:
+            print(f"Direct import failed, falling back to manual mapping: {e}")
+            # If the architecture file has a different name, fall back to the Hugging Face mapping utility
+            from transformers import AutoModelForAudioClassification
+            from transformers.models.auto.auto_factory import _get_model_class
+            model_class = _get_model_class(config, AutoModelForAudioClassification._model_mapping)
+            
+        # 3. Initialize weights and text audio processor pipelines natively
         _audio_model = model_class.from_pretrained(AUDIO_MODEL, config=config, trust_remote_code=True)
         _audio_processor = AutoProcessor.from_pretrained(AUDIO_MODEL, trust_remote_code=True)
         
