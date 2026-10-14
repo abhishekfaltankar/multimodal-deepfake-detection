@@ -14,7 +14,7 @@ import subprocess
 import sys
 import tempfile
 import wave
-
+from transformers import AutoConfig, AutoProcessor, AutoModelForAudioClassification
 import numpy as np
 import torch
 from transformers import pipeline
@@ -40,21 +40,32 @@ _audio_pipe, _vad = None, None
 def load_models():
     global _audio_model, _audio_processor
     if '_audio_model' not in globals() or _audio_model is None:
-        from transformers import AutoConfig, AutoProcessor
-        # 1. Import the dynamic loading factory tools
-        from transformers.models.auto.auto_factory import _get_model_class
+        # Added AutoModelForAudioClassification straight into the initialization imports
+        from transformers import AutoConfig, AutoProcessor, AutoModelForAudioClassification
         import torch
+        import sys
         
         print(f"Loading voice model: {AUDIO_MODEL} ...")
         
-        # 2. Extract the model's structural configuration map blueprint
+        # 1. Fetch configuration settings map with security clearance bypass tags
         config = AutoConfig.from_pretrained(AUDIO_MODEL, trust_remote_code=True)
         
-        # 3. FORCE Hugging Face to load the custom class directly, bypassing the standard model check list
-        model_class = _get_model_class(config, AutoModelForAudioClassification._model_mapping)
-        _audio_model = model_class.from_pretrained(AUDIO_MODEL, config=config, trust_remote_code=True)
+        # 2. Extract class path directly from the downloaded dynamic modules folder to bypass the dictionary check
+        module_name = config.__class__.__module__
+        class_name = config.__class__.__name__.replace("Config", "Model")
         
-        # 4. Standard audio tracker processor initialization
+        # Inject the custom downloaded class files straight into the runtime memory stack
+        __import__(module_name)
+        module = sys.modules[module_name]
+        model_class = getattr(module, class_name, None)
+        
+        if model_class is None:
+            # Fallback directly to factory generation tools if custom class tracking shifts
+            from transformers.models.auto.auto_factory import _get_model_class
+            model_class = _get_model_class(config, AutoModelForAudioClassification._model_mapping)
+            
+        # 3. Pull the weights and processor data elements
+        _audio_model = model_class.from_pretrained(AUDIO_MODEL, config=config, trust_remote_code=True)
         _audio_processor = AutoProcessor.from_pretrained(AUDIO_MODEL, trust_remote_code=True)
         
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -63,7 +74,6 @@ def load_models():
         
     if ENABLE_FACE:
         visual.load_model()
-
 # ------------------------------------------------------------------ voice part
 def to_wav(path):
     """Video/audio file -> 16 kHz mono wav (needs ffmpeg). Gives a clear reason if it fails."""
