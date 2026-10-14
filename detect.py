@@ -43,34 +43,39 @@ def load_models():
         from transformers import AutoConfig, AutoProcessor
         import torch
         import sys
+        import os
         
         print(f"Loading voice model: {AUDIO_MODEL} ...")
         
-        # 1. Load the model configuration with remote security clearance
+        # 1. Initialize standard configuration parameters with remote access clearance
         config = AutoConfig.from_pretrained(AUDIO_MODEL, trust_remote_code=True)
         
-        # 2. Extract the exact module registration names natively
-        module_name = config.__class__.__module__
-        
-        # Force the server to import the dynamic script file into the memory stack
-        __import__(module_name)
+        # 2. Force download the remote codebase layout directly into the server modules cache
+        module_name = config._class.module_
+        _import_(module_name)
         module = sys.modules[module_name]
         
-        # 3. DIRECT MATCH WORKAROUND: Find the actual classification model class inside the script file
+        # 3. DIRECT MANIFEST MATCHING WORKAROUND: Find the exact custom deep learning network class
         model_class = None
-        for attr_name in dir(module):
-            # Check for classification or prediction architecture model indicators
-            if any(k in attr_name for k in ["Classification", "Prediction", "Model"]) and not attr_name.endswith("Config"):
-                model_class = getattr(module, attr_name)
+        for attribute in dir(module):
+            # Target the custom underlying model module directly by its core name parameters
+            if "DF_Arena" in attribute and not attribute.endswith("Config"):
+                model_class = getattr(module, attribute)
                 break
                 
-        # 4. Emergency fallback if no custom names match standard conventions
+        # Final absolute production manual string mapping target if structural loops hide it
         if model_class is None:
-            from transformers import AutoModelForAudioClassification
-            from transformers.models.auto.auto_factory import _get_model_class
-            model_class = _get_model_class(config, AutoModelForAudioClassification._model_mapping)
-            
-        # 5. Initialize the weights and tracking processor structures natively
+            if hasattr(module, "DF_Arena_500M_Model"):
+                model_class = getattr(module, "DF_Arena_500M_Model")
+            elif hasattr(module, "DF_Arena_500M"):
+                model_class = getattr(module, "DF_Arena_500M")
+            else:
+                # Direct fallback to standard model layout factory routines
+                from transformers import AutoModelForAudioClassification
+                from transformers.models.auto.auto_factory import _get_model_class
+                model_class = _get_model_class(config, AutoModelForAudioClassification._model_mapping)
+        
+        # 4. Pull down weights arrays and initialize audio processor layers smoothly
         _audio_model = model_class.from_pretrained(AUDIO_MODEL, config=config, trust_remote_code=True)
         _audio_processor = AutoProcessor.from_pretrained(AUDIO_MODEL, trust_remote_code=True)
         
@@ -188,19 +193,30 @@ def analyze_audio(path):
     probs = []
     device = next(_audio_model.parameters()).device
     
-    # Process each isolated sliding frame step slice using the custom loaded class
+    # Process sliding audio window segments smoothly via raw PyTorch math tensors
     for w in windows:
         inputs = _audio_processor(w, sampling_rate=SR, return_tensors="pt")
         inputs = {k: v.to(device) for k, v in inputs.items()}
         
         with torch.no_grad():
             outputs = _audio_model(**inputs)
-            # The Speech-Arena custom class returns an object where indices or logits hold the weights matrix
-            logits = getattr(outputs, "logits", outputs[0])
+            
+            # Secure evaluation logic mapping for both custom classes and standard pipelines
+            if hasattr(outputs, "logits"):
+                logits = outputs.logits
+            elif isinstance(outputs, dict) and "logits" in outputs:
+                logits = outputs["logits"]
+            else:
+                logits = outputs
+                
             probabilities = torch.nn.functional.softmax(logits, dim=-1).cpu().numpy()
             
-        # Extract the primary fake probability array element index
-        spoof_score = float(probabilities[0][0])
+        # The primary spoof/fake index score is extracted smoothly
+        if len(probabilities.shape) > 1:
+            spoof_score = float(probabilities[0][0])
+        else:
+            spoof_score = float(probabilities[0])
+            
         probs.append(spoof_score)
         
     return {"score": float(np.mean(probs)), "speech_sec": len(y) / SR, "windows": len(windows)}
