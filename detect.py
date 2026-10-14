@@ -38,24 +38,31 @@ _audio_pipe, _vad = None, None
 
 
 def load_models():
-    global _audio_pipe
-    if _audio_pipe is None:
-        from transformers import AutoConfig, pipeline
+    global _audio_model, _audio_processor
+    # Check if the global variables are already initialized to prevent duplicate loading
+    if '_audio_model' not in globals() or _audio_model is None:
+        from transformers import AutoConfig, AutoModelForAudioClassification, AutoProcessor
         import torch
         
         print(f"Loading voice model: {AUDIO_MODEL} ...")
         
-        # 1. Fetch the architecture settings blueprint securely first to bypass path errors
+        # 1. Safely initialize the custom configuration blueprint with security clearance
         config = AutoConfig.from_pretrained(AUDIO_MODEL, trust_remote_code=True)
         
-        # 2. Inject both the model ID and the config map blueprint into the pipeline object
-        _audio_pipe = pipeline(
-            "audio-classification", 
-            model=AUDIO_MODEL, 
-            config=config,
-            trust_remote_code=True,
-            device=0 if torch.cuda.is_available() else -1
+        # 2. Directly load the model architecture class using the blueprint mapping
+        _audio_model = AutoModelForAudioClassification.from_pretrained(
+            AUDIO_MODEL, 
+            config=config, 
+            trust_remote_code=True
         )
+        
+        # 3. Load the corresponding feature tracking audio processor object
+        _audio_processor = AutoProcessor.from_pretrained(AUDIO_MODEL, trust_remote_code=True)
+        
+        # Move the weights directly to your active device (GPU if available, else CPU)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        _audio_model.to(device)
+        _audio_model.eval() # Put the neural network in secure evaluation mode
         
     if ENABLE_FACE:
         visual.load_model()
