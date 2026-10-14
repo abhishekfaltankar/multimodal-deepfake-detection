@@ -39,30 +39,28 @@ _audio_pipe, _vad = None, None
 
 def load_models():
     global _audio_model, _audio_processor
-    # Check if the global variables are already initialized to prevent duplicate loading
     if '_audio_model' not in globals() or _audio_model is None:
         from transformers import AutoConfig, AutoModelForAudioClassification, AutoProcessor
         import torch
         
         print(f"Loading voice model: {AUDIO_MODEL} ...")
         
-        # 1. Safely initialize the custom configuration blueprint with security clearance
+        # 1. Fetch the custom architecture layout blueprint securely first
         config = AutoConfig.from_pretrained(AUDIO_MODEL, trust_remote_code=True)
         
-        # 2. Directly load the model architecture class using the blueprint mapping
+        # 2. Directly initialize the classification model class using the configuration map
         _audio_model = AutoModelForAudioClassification.from_pretrained(
             AUDIO_MODEL, 
             config=config, 
             trust_remote_code=True
         )
         
-        # 3. Load the corresponding feature tracking audio processor object
+        # 3. Pull the corresponding feature tracking audio processor array data
         _audio_processor = AutoProcessor.from_pretrained(AUDIO_MODEL, trust_remote_code=True)
         
-        # Move the weights directly to your active device (GPU if available, else CPU)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         _audio_model.to(device)
-        _audio_model.eval() # Put the neural network in secure evaluation mode
+        _audio_model.eval()
         
     if ENABLE_FACE:
         visual.load_model()
@@ -174,23 +172,21 @@ def analyze_audio(path):
     windows = make_windows(y)
     
     probs = []
-    # 1. Detect the active server device layout (GPU vs CPU)
     device = next(_audio_model.parameters()).device
     
-    # 2. Evaluate each window slice using raw mathematical tensors
+    # Evaluate each individual window slice natively using raw math vectors
     for w in windows:
-        # Structure the audio matrix using your clean processor engine
         inputs = _audio_processor(w, sampling_rate=SR, return_tensors="pt")
         inputs = {k: v.to(device) for k, v in inputs.items()}
         
         with torch.no_grad():
             outputs = _audio_model(**inputs)
             logits = outputs.logits
-            # Run Softmax to turn the raw outputs into clean probabilities
-            probabilities = torch.nn.functional.softmax(logits, dim=-1).cpu().numpy()[0]
+            # Run Softmax to translate raw metrics to standard probability percentages
+            probabilities = torch.nn.functional.softmax(logits, dim=-1).cpu().numpy()
             
-        # Index 0 is the official 'spoof' (FAKE) classification target for the DF_Arena model
-        spoof_score = float(probabilities[0])
+        # Index 0 targets the synthetic 'spoof' (FAKE) calculation class for the model
+        spoof_score = float(probabilities[0][0])
         probs.append(spoof_score)
         
     return {"score": float(np.mean(probs)), "speech_sec": len(y) / SR, "windows": len(windows)}
