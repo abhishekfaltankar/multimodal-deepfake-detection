@@ -40,9 +40,23 @@ _audio_pipe, _vad = None, None
 def load_models():
     global _audio_pipe
     if _audio_pipe is None:
+        from transformers import AutoConfig, pipeline
+        import torch
+        
         print(f"Loading voice model: {AUDIO_MODEL} ...")
-        _audio_pipe = pipeline("antispoofing", model=AUDIO_MODEL, trust_remote_code=True,
-                               device="cuda" if torch.cuda.is_available() else "cpu")
+        
+        # 1. Fetch the architecture settings blueprint securely first to bypass path errors
+        config = AutoConfig.from_pretrained(AUDIO_MODEL, trust_remote_code=True)
+        
+        # 2. Inject both the model ID and the config map blueprint into the pipeline object
+        _audio_pipe = pipeline(
+            "audio-classification", 
+            model=AUDIO_MODEL, 
+            config=config,
+            trust_remote_code=True,
+            device=0 if torch.cuda.is_available() else -1
+        )
+        
     if ENABLE_FACE:
         visual.load_model()
 
