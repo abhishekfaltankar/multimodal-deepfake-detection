@@ -162,13 +162,37 @@ def spoof_prob(out):
 
 
 def analyze_audio(path):
+    import torch
+    import numpy as np
+    
     load_models()
     y, _ = load_wav(to_wav(path))
     if len(y) < SR // 2:
         raise ValueError("no usable audio")
+        
     y = speech_only(y.astype(np.float32))
     windows = make_windows(y)
-    probs = [spoof_prob(_audio_pipe(w)) for w in windows]
+    
+    probs = []
+    # 1. Detect the active server device layout (GPU vs CPU)
+    device = next(_audio_model.parameters()).device
+    
+    # 2. Evaluate each window slice using raw mathematical tensors
+    for w in windows:
+        # Structure the audio matrix using your clean processor engine
+        inputs = _audio_processor(w, sampling_rate=SR, return_tensors="pt")
+        inputs = {k: v.to(device) for k, v in inputs.items()}
+        
+        with torch.no_grad():
+            outputs = _audio_model(**inputs)
+            logits = outputs.logits
+            # Run Softmax to turn the raw outputs into clean probabilities
+            probabilities = torch.nn.functional.softmax(logits, dim=-1).cpu().numpy()[0]
+            
+        # Index 0 is the official 'spoof' (FAKE) classification target for the DF_Arena model
+        spoof_score = float(probabilities[0])
+        probs.append(spoof_score)
+        
     return {"score": float(np.mean(probs)), "speech_sec": len(y) / SR, "windows": len(windows)}
 
 
