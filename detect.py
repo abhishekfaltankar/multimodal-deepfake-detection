@@ -14,7 +14,7 @@ import subprocess
 import sys
 import tempfile
 import wave
-from transformers import AutoConfig, AutoProcessor, AutoModelForAudioClassification
+
 import numpy as np
 import torch
 from transformers import pipeline
@@ -63,7 +63,7 @@ def load_models():
         except Exception as e:
             print(f"Direct import failed, falling back to manual mapping: {e}")
             # If the architecture file has a different name, fall back to the Hugging Face mapping utility
-            from transformers import AutoModelForAudioClassification
+            from transformers import AutoConfig, AutoProcessor, AutoModelForAudioClassification
             from transformers.models.auto.auto_factory import _get_model_class
             model_class = _get_model_class(config, AutoModelForAudioClassification._model_mapping)
             
